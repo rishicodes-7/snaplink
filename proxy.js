@@ -6,10 +6,9 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-export async function middleware(req) {
+export async function proxy(req) {
   const { pathname } = req.nextUrl
 
-  // Skip Next.js internal routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -19,23 +18,16 @@ export async function middleware(req) {
     return NextResponse.next()
   }
 
-  // Extract the short code
   const code = pathname.replace('/', '')
-
   if (!code) return NextResponse.next()
 
-  // Look up the original URL
   const { data } = await supabase
     .from('links')
     .select('original_url')
     .eq('short_code', code)
     .single()
 
-  console.log("MIDDLEWARE CODE:", code)
-  console.log("MIDDLEWARE DATA:", data)
-
   if (data?.original_url) {
-    // Log the click
     await supabase.from('clicks').insert({ short_code: code })
     return NextResponse.redirect(data.original_url)
   }

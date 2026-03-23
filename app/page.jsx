@@ -14,6 +14,41 @@ const BORDER2 = "#00ff4160";
 
 const glowStyle = { textShadow: `0 0 10px ${G}, 0 0 20px ${G}` };
 
+// ── QR Modal ──────────────────────────────────────────────────────────────────
+function QRModal({ link, host, onClose }) {
+  const shortUrl = `${host}/${link.short_code}`;
+  const qrUrl = `/api/qr?url=${encodeURIComponent(shortUrl)}`;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: BG2, border: `1px solid ${BORDER2}`, padding: 28, maxWidth: 320, width: "100%", textAlign: "center" }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ fontSize: 10, color: G2, letterSpacing: 2, opacity: 0.6, marginBottom: 16 }}>// QR_CODE</div>
+        <div style={{ fontSize: 12, color: G, marginBottom: 20, wordBreak: "break-all" }}>{shortUrl}</div>
+
+        {/* QR Image */}
+        <div style={{ background: "#fff", padding: 12, display: "inline-block", marginBottom: 20 }}>
+          <img src={qrUrl} alt="QR Code" width={200} height={200} />
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <a href={qrUrl} download={`qr-${link.short_code}.png`}
+            style={{ flex: 1, padding: "10px", background: "transparent", color: G, border: `1px solid ${G}`, fontSize: 11, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1, textDecoration: "none", display: "block" }}>
+            ↓ DOWNLOAD
+          </a>
+          <button onClick={onClose}
+            style={{ flex: 1, padding: "10px", background: "transparent", color: G2, border: `1px solid ${BORDER}`, fontSize: 11, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}>
+            CLOSE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Auth Page ─────────────────────────────────────────────────────────────────
 function AuthPage() {
   const [mode, setMode] = useState("login");
@@ -47,25 +82,19 @@ function AuthPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
-        @keyframes flicker { 0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:0.8} 95%{opacity:1} 97%{opacity:0.9} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         .auth-card { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         .snap-input:focus { border-color: ${G} !important; box-shadow: 0 0 0 1px ${G}, 0 0 12px ${G}30 !important; outline: none; }
         .snap-input { transition: all 0.2s; }
-        .snap-btn:hover { background: ${G} !important; color: ${BG} !important; box-shadow: 0 0 20px ${G}60 !important; }
+        .snap-btn:hover:not(:disabled) { background: ${G} !important; color: ${BG} !important; box-shadow: 0 0 20px ${G}60 !important; }
         .snap-btn { transition: all 0.2s; }
         .snap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
 
-      {/* Scanline effect */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px)`, pointerEvents: "none", zIndex: 0 }} />
-
-      {/* Grid background */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: `linear-gradient(${BORDER} 1px, transparent 1px), linear-gradient(90deg, ${BORDER} 1px, transparent 1px)`, backgroundSize: "40px 40px", pointerEvents: "none", zIndex: 0 }} />
 
       <div className="auth-card" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 440, border: `1px solid ${BORDER2}`, background: BG2, padding: "clamp(24px,5vw,40px)" }}>
-        {/* Terminal header */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: `1px solid ${BORDER}` }}>
           <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
           <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
@@ -123,6 +152,7 @@ function Dashboard({ user }) {
   const [chartData, setChartData] = useState([]);
   const [copied, setCopied] = useState(null);
   const [selectedLink, setSelectedLink] = useState(null);
+  const [qrLink, setQrLink] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [blink, setBlink] = useState(true);
 
@@ -203,13 +233,16 @@ function Dashboard({ user }) {
         .snap-btn { transition: all 0.15s; }
         .snap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .ghost-btn:hover { color: ${G} !important; border-color: ${BORDER2} !important; }
-        .del-btn:hover { color: #ff4444 !important; }
+        .del-btn:hover { color: #ff4444 !important; border-color: #ff444430 !important; }
+        .qr-btn:hover { color: #ffaa00 !important; border-color: #ffaa0030 !important; }
         .link-row:hover { background: ${BG3} !important; }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: ${G3}; }
       `}</style>
 
-      {/* Scanline */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.01) 2px, rgba(0,255,65,0.01) 4px)`, pointerEvents: "none", zIndex: 0 }} />
+
+      {/* QR Modal */}
+      {qrLink && <QRModal link={qrLink} host={host} onClose={() => setQrLink(null)} />}
 
       {/* Header */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px clamp(16px,4vw,32px)", borderBottom: `1px solid ${BORDER}`, background: BG2, position: "sticky", top: 0, zIndex: 10, flexWrap: "wrap", gap: 10 }}>
@@ -275,7 +308,6 @@ function Dashboard({ user }) {
             <div style={{ padding: "40px", textAlign: "center", color: G2, opacity: 0.5, fontSize: 12 }}>// no records found — snip your first url</div>
           ) : (
             <div>
-              {/* Table header */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, padding: "8px 20px", borderBottom: `1px solid ${BORDER}`, fontSize: 9, color: G2, opacity: 0.5, letterSpacing: 2 }}>
                 <span>SHORT_URL / ORIGINAL</span>
                 <span>ACTIONS</span>
@@ -294,14 +326,22 @@ function Dashboard({ user }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    {[
-                      { label: copied === link.short_code ? "COPIED!" : "COPY", onClick: () => copyLink(link.short_code), color: G },
-                      { label: "STATS", onClick: () => openAnalytics(link), color: "#00aaff" },
-                      { label: "DEL", onClick: () => deleteLink(link.id), color: "#ff4444", cls: "del-btn" },
-                    ].map(({ label, onClick, color, cls }) => (
-                      <button key={label} className={`snap-btn ${cls || ""}`} style={{ padding: "5px 10px", background: "transparent", color: color + "99", border: `1px solid ${color}30`, fontSize: 10, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}
-                        onClick={onClick}>{label}</button>
-                    ))}
+                    <button className="snap-btn" style={{ padding: "5px 10px", background: "transparent", color: G + "99", border: `1px solid ${G}30`, fontSize: 10, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}
+                      onClick={() => copyLink(link.short_code)}>
+                      {copied === link.short_code ? "COPIED!" : "COPY"}
+                    </button>
+                    <button className="snap-btn qr-btn" style={{ padding: "5px 10px", background: "transparent", color: "#ffaa0099", border: "1px solid #ffaa0030", fontSize: 10, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}
+                      onClick={() => setQrLink(link)}>
+                      QR
+                    </button>
+                    <button className="snap-btn" style={{ padding: "5px 10px", background: "transparent", color: "#00aaff99", border: "1px solid #00aaff30", fontSize: 10, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}
+                      onClick={() => openAnalytics(link)}>
+                      STATS
+                    </button>
+                    <button className="snap-btn del-btn" style={{ padding: "5px 10px", background: "transparent", color: "#ff444499", border: "1px solid #ff444430", fontSize: 10, cursor: "pointer", fontFamily: "inherit", letterSpacing: 1 }}
+                      onClick={() => deleteLink(link.id)}>
+                      DEL
+                    </button>
                   </div>
                 </div>
               ))}
@@ -351,7 +391,12 @@ export default function Home() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setChecking(false);
+    }).catch(() => {
+      setChecking(false);
     });
+
+    // Force timeout after 3 seconds
+    setTimeout(() => setChecking(false), 3000);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
@@ -364,5 +409,14 @@ export default function Home() {
     </div>
   );
 
-  return user ? <Dashboard user={user} /> : <AuthPage />;
+  if (user) return (
+    <div>
+      <button onClick={() => supabase.auth.signOut()} style={{ position: "fixed", top: 10, right: 10, zIndex: 9999, padding: "8px 16px", background: "red", color: "white", border: "none", cursor: "pointer" }}>
+        SIGN OUT
+      </button>
+      <Dashboard user={user} />
+    </div>
+  );
+
+  return <AuthPage />;
 }

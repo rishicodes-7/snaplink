@@ -409,14 +409,7 @@ export default function Home() {
     </div>
   );
 
-  if (user) return (
-    <div>
-      <button onClick={() => supabase.auth.signOut()} style={{ position: "fixed", top: 10, right: 10, zIndex: 9999, padding: "8px 16px", background: "red", color: "white", border: "none", cursor: "pointer" }}>
-        SIGN OUT
-      </button>
-      <Dashboard user={user} />
-    </div>
-  );
+ if (user) return <Dashboard user={user} />;
 
   return <AuthPage />;
 }
